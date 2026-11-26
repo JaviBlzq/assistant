@@ -1,0 +1,3 @@
+-keep class com.javiblzq.assistant.** { *; }
+-dontwarn org.java_websocket.**
+-keep class org.java_websocket.** { *; }

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASSISTANT // LOCAL CONTROL PORTAL</title>
+<style>
+@font-face {
+  font-family: 'Doto';
+  src: url('/fonts/Doto-Bold.ttf') format('truetype');
+  font-display: swap;
+}
+:root {
+  --bg: #000000;
+  --panel: #080808;
+  --fg: #ffffff;
+  --muted: #8a8a8a;
+  --border: #2a2a2a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 14px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+header {
+  border: 1px solid var(--fg);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+h1 {
+  margin: 0;
+  font-family: 'Doto', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.sub { color: var(--muted); font-size: 11px; }
+.dots { font-family: inherit; font-weight: 700; font-variant-numeric: tabular-nums; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 12px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+.card h2 {
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Doto', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+}
+.section-sub {
+  margin: 14px 0 6px 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-family: 'Doto', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg);
+}
+.help-note {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+label {
+  display: block;
+  margin: 8px 0 3px 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+input, select, textarea {
+  width: 100%;
+  background: #000;
+  color: #fff;
+  border: 1px solid var(--border);
+  padding: 8px;
+  font-family: inherit;
+  font-size: 13px;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #fff;
+}
+.row { display: flex; gap: 8px; align-items: center; }
+.row > * { flex: 1; }
+button, .btn {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  border: 1px solid #fff;
+  padding: 9px 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 8px;
+}
+button.primary, .btn.primary {
+  background: #fff;
+  color: #000;
+}
+button.small {
+  padding: 5px 8px;
+  font-size: 11px;
+  margin-top: 0;
+}
+.status-box {
+  border: 1px solid var(--border);
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  background: #000;
+}
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #1e1e1e;
+  padding: 6px 8px;
+  margin-top: 4px;
+  gap: 8px;
+}
+.geo-results {
+  margin-top: 4px;
+  border: 1px solid #333;
+  max-height: 150px;
+  overflow-y: auto;
+}
+.geo-item {
+  padding: 6px;
+  border-bottom: 1px solid #1e1e1e;
+  cursor: pointer;
+  font-size: 11px;
+}
+.geo-item:hover { background: #1a1a1a; }
+#toast {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  background: #fff;
+  color: #000;
+  padding: 10px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  display: none;
+  z-index: 99;
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ASSISTANT // CONTROL LOCAL</h1>
+    <div class="sub" id="sysLine">CARGANDO ESTADO DE LA TABLET...</div>
+  </div>
+  <div class="row" style="flex:0 0 auto; gap:8px;">
+    <button onclick="wakeTablet()">ENCENDER PANTALLA</button>
+    <button class="primary" onclick="triggerSync()">SINCRONIZAR TODO</button>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- TAREAS, NOTAS Y BOT TELEGRAM -->
+  <section class="card">
+    <h2>01 // TAREAS Y NOTA EN PANTALLA</h2>
+    <label>Nota destacada en la tablet</label>
+    <div class="row">
+      <input id="pinnedNote" placeholder="Ej: Llevar zapatillas al coche" />
+      <button class="small primary" style="flex:0 0 auto;" onclick="saveNote()">FIJAR</button>
+    </div>
+    <label>Nueva tarea rápida</label>
+    <div class="row">
+      <input id="newTaskText" placeholder="Ej: Revisar presión neumáticos" />
+      <button class="small" style="flex:0 0 auto;" onclick="addTask()">+ AÑADIR</button>
+    </div>
+    <div id="tasksContainer" style="margin-top:8px;"></div>
+
+    <div class="section-sub">BOT DE TELEGRAM EN LA TABLET</div>
+    <div class="status-box" id="telegramStatusBox">Telegram Bot: --</div>
+    <label>Telegram Bot Token</label>
+    <input id="telegramBotToken" type="password" placeholder="123456789:ABCdef..." />
+    <label>Chat ID Autorizado (opcional)</label>
+    <input id="telegramAllowedChatId" placeholder="Ej: 123456789 (vacío = cualquier chat)" />
+    <button class="primary" onclick="saveTelegram()">GUARDAR BOT TELEGRAM</button>
+    <div class="help-note">
+      Crea un bot en @BotFather, pega aquí el token y (opcionalmente) tu Chat ID para restringir el acceso.
+      La tablet hace polling directo desde la app: envía un mensaje o nota al bot desde Telegram para añadir tareas y notas en pantalla al instante.
+    </div>
+  </section>
+
+  <!-- Harbiz Y OBJETIVO SEMANAL -->
+  <section class="card">
+    <h2>02 // Harbiz (SEMYRA-SPORT DDP)</h2>
+    <div class="status-box" id="harbizStatusBox" role="status">Estado: --</div>
+    <label>Email / Usuario Harbiz</label>
+    <input id="harbizEmail" type="text" autocomplete="username" autocapitalize="none" placeholder="tu@email.com o usuario" />
+    <label>Contraseña Harbiz (solo para obtener token de sesión)</label>
+    <input id="harbizPass" type="password" placeholder="••••••••" />
+    <button class="primary" onclick="connectHarbiz()">CONECTAR Y SINCRONIZAR Harbiz</button>
+    <label for="harbizToken">O pega un token de sesión Harbiz</label>
+    <div class="row">
+      <input id="harbizToken" type="password" autocomplete="off" />
+      <button class="small" style="flex:0 0 auto;" onclick="connectHarbiz(true)">USAR TOKEN</button>
+    </div>
+    <div class="section-sub">PROGRESO SEMANAL (DESDE EL LUNES)</div>
+    <label>Objetivo Semanal de Entrenos (ej. 6)</label>
+    <div class="row">
+      <input id="weeklyTrainingGoal" type="number" min="1" max="30" placeholder="6" />
+      <button class="small primary" style="flex:0 0 auto;" onclick="saveWeeklyGoal()">GUARDAR OBJETIVO</button>
+    </div>
+    <div class="help-note">
+      Define el denominador del contador semanal (<span class="dots">3/6</span>) en el panel de entrenos de la tablet.
+    </div>
+  </section>
+
+  <!-- STRAVA -->
+  <section class="card">
+    <h2>03 // STRAVA PREMIUM</h2>
+    <div class="status-box" id="stravaStatusBox" role="status">Estado: --</div>
+    <div class="row">
+      <div>
+        <label>Client ID</label>
+        <input id="stravaClientId" placeholder="123456" />
+      </div>
+      <div>
+        <label>Client Secret</label>
+        <input id="stravaClientSecret" type="password" autocomplete="off" />
+      </div>
+    </div>
+    <div class="row">
+      <button onclick="authorizeStrava(false)">GUARDAR CREDENCIALES</button>
+      <button class="primary" onclick="authorizeStrava()">AUTORIZAR STRAVA OAUTH</button>
+    </div>
+    <label for="stravaCallbackHost">Retorno de la autorización de Strava</label>
+    <select id="stravaCallbackHost">
+      <option value="localhost">localhost (desde un ordenador o móvil)</option>
+      <option value="lan">IP de la tablet (si está registrada en Strava)</option>
+    </select>
+    <p>Concede el permiso de actividades. Si el navegador muestra un error en localhost, copia su URL completa y pégala en «Código o URL de retorno».</p>
+    <div class="help-note">
+      <strong>Consejo OAuth:</strong> En la pantalla de autorización de Strava deja marcada la casilla <strong>«View data about your private activities»</strong> para leer tus carreras privadas y zonas de pulso. Si configuras la tablet desde un PC conectado por USB o en la misma Wi-Fi, puedes abrir directamente <strong>http://192.168.1.171:8080/</strong> en la red LAN sin necesidad de redirección de puertos en localhost.
+    </div>
+    <label for="stravaManualType">Conexión manual</label>
+    <select id="stravaManualType">
+      <option value="authorizationCode">Código o URL de retorno</option>
+      <option value="refreshToken">Refresh token</option>
+      <option value="accessToken">Access token</option>
+    </select>
+    <div class="row">
+      <input id="stravaManualValue" type="password" autocomplete="off" aria-label="Código, URL de retorno o token" />
+      <button class="small" style="flex:0 0 auto;" onclick="saveStravaManual()">CONECTAR</button>
+    </div>
+  </section>
+
+  <!-- UBICACIONES Y TRAFICO -->
+  <section class="card">
+    <h2>04 // UBICACIONES &amp; TRÁFICO COCHE</h2>
+    <div class="status-box" id="commuteStatusBox">ETA: --</div>
+    <label>Buscar dirección (Casa / Trabajo / Gym)</label>
+    <div class="row">
+      <input id="geoQuery" placeholder="Calle, dirección o gimnasio..." />
+      <select id="geoTarget" style="flex:0 0 110px;">
+        <option value="home">CASA</option>
+        <option value="work">TRABAJO</option>
+        <option value="gym">GYM</option>
+      </select>
+      <button class="small" style="flex:0 0 auto;" onclick="searchGeo()">BUSCAR</button>
+    </div>
+    <div id="geoResults" class="geo-results" style="display:none;"></div>
+
+    <div class="row">
+      <div><label>Casa Lat</label><input id="homeLat" /></div>
+      <div><label>Casa Lon</label><input id="homeLon" /></div>
+    </div>
+    <div class="row">
+      <div><label>Trabajo Lat</label><input id="workLat" /></div>
+      <div><label>Trabajo Lon</label><input id="workLon" /></div>
+    </div>
+    <div class="row">
+      <div><label>Gym Lat</label><input id="gymLat" /></div>
+      <div><label>Gym Lon</label><input id="gymLon" /></div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Proveedor tráfico coche</label>
+        <select id="trafficProvider">
+          <option value="osrm">OSRM (Sin API key)</option>
+          <option value="google">Google Directions (Tráfico real)</option>
+          <option value="tomtom">TomTom Routing (Tráfico real)</option>
+        </select>
+      </div>
+      <div style="flex:0 0 130px;">
+        <label>Refresco tráfico (min)</label>
+        <input id="trafficIntervalMinutes" type="number" min="1" max="60" placeholder="10" />
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Google Maps API Key</label><input id="googleMapsApiKey" type="password" /></div>
+      <div><label>TomTom API Key</label><input id="tomtomApiKey" type="password" /></div>
+    </div>
+    <button class="primary" onclick="saveGeneral()">GUARDAR UBICACIONES Y TRÁFICO</button>
+  </section>
+
+  <!-- CALENDARIO -->
+  <section class="card">
+    <h2>05 // CALENDARIO (.ICS / EVENTOS)</h2>
+    <label>URLs privadas iCal (.ics de Google/Apple, una por línea)</label>
+    <textarea id="icalUrls" rows="3" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"></textarea>
+    <button onclick="saveGeneral()">GUARDAR FEEDS .ICS</button>
+
+    <label style="margin-top:12px;">Añadir evento manual rápido</label>
+    <input id="evTitle" placeholder="Título del evento" />
+    <div class="row">
+      <input id="evDate" type="date" />
+      <input id="evTime" type="time" value="10:00" />
+    </div>
+    <button class="primary" onclick="addEvent()">+ AÑADIR EVENTO</button>
+    <div id="eventsContainer" style="margin-top:8px;"></div>
+  </section>
+
+  <!-- ENERGÍA Y PANTALLA -->
+  <section class="card">
+    <h2>06 // PANTALLA Y HORARIO</h2>
+    <div class="status-box">Activación: Solo toque en pantalla (sin cámara) · Solo red LAN local</div>
+    <div class="row">
+      <div><label>Inicio Día (09:00)</label><input id="dayStartHour" type="number" min="0" max="23" /></div>
+      <div><label>Fin Día / Noche (18:00)</label><input id="dayEndHour" type="number" min="0" max="23" /></div>
+    </div>
+    <div class="row">
+      <div><label>Timeout Activo Día (s)</label><input id="wakeTimeoutSeconds" type="number" min="10" max="600" /></div>
+      <div><label>Timeout Toque Noche (s)</label><input id="nightWakeTimeoutSeconds" type="number" min="10" max="300" /></div>
+    </div>
+    <div class="row">
+      <div><label>Brillo Bajo Consumo (0.01-0.5)</label><input id="lowPowerBrightness" type="number" step="0.02" min="0.01" max="0.5" /></div>
+      <div><label>Brillo Panel Completo (0.2-1.0)</label><input id="activeBrightness" type="number" step="0.05" min="0.2" max="1.0" /></div>
+    </div>
+    <button class="primary" onclick="saveGeneral()">APLICAR ENERGÍA</button>
+  </section>
+
+  <!-- MERCADOS -->
+  <section class="card">
+    <h2>07 // MERCADOS (MSCI WORLD &amp; ACCIONES)</h2>
+    <div class="status-box" id="marketStatusBox" role="status">MSCI World: --</div>
+    <label for="marketPrimarySymbol">Índice principal (curva 30 días en tablet)</label>
+    <div class="row">
+      <select id="marketPrimarySymbol">
+        <option value="IWDA.AS">IWDA.AS — MSCI World EUR (iShares)</option>
+        <option value="URTH">URTH — MSCI World USD (iShares)</option>
+        <option value="^990100-USD-STRD">^990100-USD-STRD — MSCI World Index</option>
+        <option value="SPY">SPY — S&amp;P 500 ETF</option>
+        <option value="QQQ">QQQ — Nasdaq 100 ETF</option>
+      </select>
+      <button class="small primary" style="flex:0 0 auto;" onclick="setPrimaryMarket()">CAMBIAR ÍNDICE</button>
+    </div>
+    <label for="newTickerSymbol">Añadir acción / ETF / cripto al watchlist</label>
+    <div class="row">
+      <input id="newTickerSymbol" autocapitalize="characters" placeholder="Ej: AAPL, MSFT, NVDA, SAN.MC, BTC-USD" />
+      <button class="small" style="flex:0 0 auto;" onclick="addMarketTicker()">+ AÑADIR ACCIÓN</button>
+    </div>
+    <div id="watchlistContainer" style="margin-top:8px;"></div>
+    <div class="help-note">
+      Cotizaciones obtenidas en tiempo real vía Yahoo Finance v8 (sin API key). Si <strong>IWDA.AS</strong> no responde, la tablet conmuta automáticamente a <strong>URTH</strong> como alternativa MSCI World.
+    </div>
+  </section>
+
+  <!-- DOMÓTICA TAPO / ALEXA & SERVICIOS SEMYRA -->
+  <section class="card">
+    <h2>08 // DOMÓTICA (BOMBILLAS TAPO / ALEXA) &amp; SERVICIOS SEMYRA</h2>
+    <div class="status-box" id="smarthomeStatusBox" role="status">Domótica: --</div>
+    <label for="tapoEmail">Cuenta TP-Link Tapo Email</label>
+    <input id="tapoEmail" type="email" autocomplete="username" autocapitalize="none" placeholder="tu@email.com" />
+    <label for="tapoPassword">Contraseña Tapo</label>
+    <input id="tapoPassword" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <label for="semyraServiceUrls">URLs de servicios Semyra a monitorizar (una por línea)</label>
+    <textarea id="semyraServiceUrls" rows="2" placeholder="https://sport.semyra.app/api/health&#10;https://nutrition.semyra.app/api/health"></textarea>
+    <button class="primary" onclick="saveSmartHomeCredentials()">GUARDAR CREDENCIALES TAPO Y URLS SEMYRA</button>
+
+    <div class="section-sub">AÑADIR BOMBILLA TAPO / ALEXA</div>
+    <div class="row">
+      <div>
+        <label for="bulbName">Nombre</label>
+        <input id="bulbName" placeholder="Ej: Lámpara Salón" />
+      </div>
+      <div>
+        <label for="bulbIp">IP local Tapo</label>
+        <input id="bulbIp" placeholder="IP local Tapo, ej: 192.168.1.55" />
+      </div>
+    </div>
+    <label for="bulbWebhookOn">Webhook ON (opcional)</label>
+    <input id="bulbWebhookOn" placeholder="Opcional: Webhook ON Alexa/VoiceMonkey/HA" />
+    <label for="bulbWebhookOff">Webhook OFF (opcional)</label>
+    <input id="bulbWebhookOff" placeholder="Opcional: Webhook OFF" />
+    <button onclick="addSmartBulb()">+ AÑADIR BOMBILLA</button>
+    <div id="bulbsContainer" style="margin-top:8px;"></div>
+
+    <div class="section-sub">ESTADO ECOSISTEMA SEMYRA</div>
+    <div id="serviceHealthContainer"></div>
+  </section>
+
+</div>
+
+<div id="toast">GUARDADO</div>
+
+<script>
+let currentState = null;
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2400);
+}
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers: {} };
+  if (body !== null) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opts);
+  const data = await r.json();
+  if (!r.ok || data.ok === false) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+
+function integrationStatus(id, message, notify = false) {
+  document.getElementById(id).textContent = `Estado: ${message}`;
+  if (notify) toast(message);
+}
+
+async function loadState() {
+  const s = await api('/api/state');
+  currentState = s;
+  const c = s.config;
+  const sum = s.summary;
+
+  document.getElementById('sysLine').textContent =
+    `IP ${s.lanIp}:${s.port}  //  CLIMA ${sum.weatherTemp ?? '--'}°C  //  Harbiz: ${sum.harbizStatus}  //  STRAVA: ${sum.stravaStatus}`;
+
+  document.getElementById('pinnedNote').value = c.pinnedNote || '';
+  document.getElementById('telegramBotToken').value =
+    c.telegramBotToken || (c.telegramConnected ? '••••••' : '');
+  document.getElementById('telegramAllowedChatId').value = c.telegramAllowedChatId || '';
+  document.getElementById('telegramStatusBox').textContent =
+    `Telegram Bot: ${sum.telegramStatus || (c.telegramConnected ? 'ACTIVO' : 'NO CONFIGURADO')}`;
+
+  document.getElementById('harbizEmail').value = c.harbizEmail || '';
+  const workout = sum.harbizWorkoutTitle && sum.harbizStatus && sum.harbizStatus.startsWith('OK')
+    ? ` · ${sum.harbizWorkoutTitle}` : '';
+  integrationStatus('harbizStatusBox', (sum.harbizStatus || 'NO CONFIGURADO') + workout);
+  document.getElementById('weeklyTrainingGoal').value = c.weeklyTrainingGoal || 6;
+
+  document.getElementById('stravaClientId').value = c.stravaClientId || '';
+  document.getElementById('stravaClientSecret').placeholder =
+    c.stravaClientSecret ? 'Guardado en la tablet' : 'Client Secret';
+  const athlete = c.stravaAthleteName && sum.stravaStatus && sum.stravaStatus.startsWith('OK')
+    ? ` · ${c.stravaAthleteName}` : '';
+  integrationStatus('stravaStatusBox', (sum.stravaStatus || 'NO CONFIGURADO') + athlete);
+
+  document.getElementById('homeLat').value = c.homeLat;
+  document.getElementById('homeLon').value = c.homeLon;
+  document.getElementById('workLat').value = c.workLat;
+  document.getElementById('workLon').value = c.workLon;
+  document.getElementById('gymLat').value = c.gymLat;
+  document.getElementById('gymLon').value = c.gymLon;
+  document.getElementById('trafficProvider').value = c.trafficProvider || 'osrm';
+  document.getElementById('trafficIntervalMinutes').value = c.trafficIntervalMinutes || 10;
+  document.getElementById('googleMapsApiKey').value = c.googleMapsApiKey || '';
+  document.getElementById('tomtomApiKey').value = c.tomtomApiKey || '';
+  const providerTag = sum.workProvider ? ` · ${sum.workProvider}` : '';
+  document.getElementById('commuteStatusBox').textContent =
+    `TRABAJO: ${sum.workEtaMin ?? '--'} MIN  |  GYM: ${sum.gymEtaMin ?? '--'} MIN${providerTag}`;
+
+  document.getElementById('icalUrls').value = (c.icalUrls || []).join('\n');
+  document.getElementById('dayStartHour').value = c.dayStartHour;
+  document.getElementById('dayEndHour').value = c.dayEndHour;
+  document.getElementById('wakeTimeoutSeconds').value = c.wakeTimeoutSeconds;
+  document.getElementById('nightWakeTimeoutSeconds').value = c.nightWakeTimeoutSeconds;
+  document.getElementById('lowPowerBrightness').value = c.lowPowerBrightness;
+  document.getElementById('activeBrightness').value = c.activeBrightness;
+
+  renderTasks(c.tasks || []);
+  renderEvents(c.manualEvents || []);
+
+  // 07 // MERCADOS
+  const primarySel = document.getElementById('marketPrimarySymbol');
+  const primaryVal = c.marketPrimarySymbol || 'IWDA.AS';
+  if (!Array.from(primarySel.options).some(o => o.value === primaryVal)) {
+    const opt = document.createElement('option');
+    opt.value = primaryVal;
+    opt.textContent = primaryVal;
+    primarySel.appendChild(opt);
+  }
+  primarySel.value = primaryVal;
+  renderMarketStatus(s.market, primaryVal);
+  renderWatchlist(c.marketWatchlistSymbols || [], (s.market && s.market.watchlist) || []);
+
+  // 08 // DOMÓTICA TAPO & SERVICIOS SEMYRA
+  document.getElementById('smarthomeStatusBox').textContent =
+    `Domótica: ${s.smartBulbsStatus || 'SIN DISPOSITIVOS'}`;
+  document.getElementById('tapoEmail').value = c.tapoEmail || '';
+  document.getElementById('tapoPassword').value = '';
+  document.getElementById('tapoPassword').placeholder =
+    c.tapoPassword ? 'Guardada en la tablet' : 'Contraseña Tapo';
+  document.getElementById('semyraServiceUrls').value = (c.semyraServiceUrls || []).join('\n');
+  renderSmartBulbs(s.smartBulbs || c.smartBulbs || []);
+  renderServiceHealth(s.serviceHealth || []);
+}
+
+function fmtMarketPrice(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '--';
+  if (n >= 1000) return n.toFixed(0);
+  if (n >= 100) return n.toFixed(1);
+  return n.toFixed(2);
+}
+
+function fmtSignedPct(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '--%';
+  return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+}
+
+function renderMarketStatus(market, fallbackSymbol) {
+  const box = document.getElementById('marketStatusBox');
+  const pq = market && market.primaryQuote;
+  if (pq) {
+    const curr = pq.currency === 'EUR' ? '€' : pq.currency === 'USD' ? '$' : (pq.currency || '');
+    box.textContent =
+      `${pq.symbol} · ${fmtMarketPrice(pq.price)} ${curr}  |  ${fmtSignedPct(pq.changePercent1d)} 1D  ·  ${fmtSignedPct(pq.changePercent1m)} 1M  (${market.statusText || 'OK'})`;
+  } else {
+    box.textContent = `${fallbackSymbol}: ${(market && market.statusText) || 'PENDIENTE DE SINCRONIZACIÓN'}`;
+  }
+}
+
+function renderWatchlist(symbols, quotes) {
+  const el = document.getElementById('watchlistContainer');
+  el.innerHTML = '';
+  if (!symbols.length) {
+    el.innerHTML = '<div class="help-note">Sin acciones en watchlist. Añade un ticker arriba.</div>';
+    return;
+  }
+  const quoteMap = {};
+  quotes.forEach(q => { quoteMap[q.symbol.toUpperCase()] = q; });
+  symbols.forEach(sym => {
+    const q = quoteMap[String(sym).toUpperCase()];
+    const quoteText = q
+      ? ` — ${fmtMarketPrice(q.price)} ${escapeHtml(q.currency || '')} (${fmtSignedPct(q.changePercent1d)} 1D)`
+      : ' — esperando sync';
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `<span><strong>${escapeHtml(sym)}</strong>${quoteText}</span>
+      <button class="small" onclick="removeMarketTicker('${escapeHtml(sym)}')">X</button>`;
+    el.appendChild(div);
+  });
+}
+
+function renderSmartBulbs(bulbs) {
+  const el = document.getElementById('bulbsContainer');
+  el.innerHTML = '';
+  if (!bulbs.length) {
+    el.innerHTML = '<div class="help-note">Sin bombillas configuradas. Añade una bombilla Tapo (IP local) o un webhook Alexa.</div>';
+    return;
+  }
+  bulbs.forEach(b => {
+    const stateTag = b.isOn ? '☀ ON' : '○ OFF';
+    const targetInfo = b.ipAddress ? ` · ${escapeHtml(b.ipAddress)}` : ' · WEBHOOK';
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `<span><strong>${escapeHtml(b.name)}</strong> (${stateTag} · ${escapeHtml(b.statusText || 'LISTO')}${targetInfo})</span>
+      <div style="display:flex;gap:4px;flex:0 0 auto;">
+        <button class="small ${b.isOn ? 'primary' : ''}" onclick="toggleSmartBulb('${escapeHtml(b.id)}')">${b.isOn ? 'APAGAR' : 'ENCENDER'}</button>
+        <button class="small" onclick="deleteSmartBulb('${escapeHtml(b.id)}')">X</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderServiceHealth(items) {
+  const el = document.getElementById('serviceHealthContainer');
+  el.innerHTML = '';
+  if (!items.length) {
+    el.innerHTML = '<div class="help-note">Pulsa «SINCRONIZAR TODO» para comprobar la conectividad del ecosistema Semyra.</div>';
+    return;
+  }
+  items.forEach(item => {
+    const dot = item.online ? '●' : '○';
+    const statusLabel = item.online
+      ? `EN LÍNEA (${item.latencyMs >= 0 ? item.latencyMs + ' ms' : '--'})`
+      : 'SIN CONEXIÓN';
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.style.opacity = item.online ? '1' : '0.68';
+    div.innerHTML = `<span><strong>${dot} ${escapeHtml(item.name)}</strong> — ${statusLabel}</span>
+      <span class="sub" style="text-align:right;">${escapeHtml(item.detail || '')}</span>`;
+    el.appendChild(div);
+  });
+}
+
+function renderTasks(tasks) {
+  const el = document.getElementById('tasksContainer');
+  el.innerHTML = '';
+  tasks.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `<span>${t.done ? '[X]' : (t.priority ? '[!]' : '[ ]')} ${escapeHtml(t.text)}</span>
+      <div style="display:flex;gap:4px;">
+        <button class="small" onclick="toggleTask('${t.id}')">OK</button>
+        <button class="small" onclick="delTask('${t.id}')">X</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderEvents(events) {
+  const el = document.getElementById('eventsContainer');
+  el.innerHTML = '';
+  events.forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `<span>${ev.dateIso} ${ev.startTime} — ${escapeHtml(ev.title)}</span>
+      <button class="small" onclick="delEvent('${ev.id}')">X</button>`;
+    el.appendChild(div);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function wakeTablet() { await api('/api/wake', 'POST', {}); toast('PANTALLA DESPERTADA'); }
+async function triggerSync() { await api('/api/sync', 'POST', {}); toast('SINCRONIZANDO...'); setTimeout(loadState, 2500); }
+
+async function saveNote() {
+  await api('/api/tasks', 'POST', { action: 'note', pinnedNote: document.getElementById('pinnedNote').value });
+  toast('NOTA ACTUALIZADA');
+}
+async function addTask() {
+  const inp = document.getElementById('newTaskText');
+  if (!inp.value.trim()) return;
+  await api('/api/tasks', 'POST', { action: 'add', text: inp.value.trim() });
+  inp.value = '';
+  await loadState();
+  toast('TAREA AÑADIDA');
+}
+async function toggleTask(id) { await api('/api/tasks', 'POST', { action: 'toggle', id }); await loadState(); }
+async function delTask(id) { await api('/api/tasks', 'POST', { action: 'delete', id }); await loadState(); }
+
+async function saveTelegram() {
+  await api('/api/config', 'POST', {
+    telegramBotToken: document.getElementById('telegramBotToken').value.trim(),
+    telegramAllowedChatId: document.getElementById('telegramAllowedChatId').value.trim()
+  });
+  toast('BOT TELEGRAM GUARDADO');
+  setTimeout(loadState, 1200);
+}
+
+async function saveWeeklyGoal() {
+  const goal = parseInt(document.getElementById('weeklyTrainingGoal').value, 10) || 6;
+  await api('/api/config', 'POST', { weeklyTrainingGoal: goal });
+  toast('OBJETIVO SEMANAL GUARDADO');
+  setTimeout(loadState, 1000);
+}
+
+async function addEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  const dateIso = document.getElementById('evDate').value;
+  const startTime = document.getElementById('evTime').value || '09:00';
+  if (!title || !dateIso) return toast('INDICA TITULO Y FECHA');
+  await api('/api/calendar/manual', 'POST', { action: 'add', title, dateIso, startTime });
+  document.getElementById('evTitle').value = '';
+  await loadState();
+  toast('EVENTO AÑADIDO');
+}
+async function delEvent(id) { await api('/api/calendar/manual', 'POST', { action: 'delete', id }); await loadState(); }
+
+async function setPrimaryMarket() {
+  const symbol = document.getElementById('marketPrimarySymbol').value.trim();
+  if (!symbol) return;
+  try {
+    await api('/api/market', 'POST', { action: 'set_primary', symbol });
+    toast('ÍNDICE PRINCIPAL ACTUALIZADO');
+    setTimeout(loadState, 1800);
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function addMarketTicker() {
+  const inp = document.getElementById('newTickerSymbol');
+  const symbol = inp.value.trim().toUpperCase();
+  if (!symbol) return toast('INDICA UN TICKER (EJ: AAPL)');
+  try {
+    await api('/api/market', 'POST', { action: 'add', symbol });
+    inp.value = '';
+    await loadState();
+    toast('ACCIÓN AÑADIDA · SINCRONIZANDO');
+    setTimeout(loadState, 2200);
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function removeMarketTicker(symbol) {
+  try {
+    await api('/api/market', 'POST', { action: 'remove', symbol });
+    await loadState();
+    toast('TICKER ELIMINADO');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function saveSmartHomeCredentials() {
+  try {
+    const tapoEmail = document.getElementById('tapoEmail').value.trim();
+    const tapoPassword = document.getElementById('tapoPassword').value;
+    const semyraServiceUrls = document.getElementById('semyraServiceUrls').value
+      .split('\n').map(s => s.trim()).filter(Boolean);
+    const payload = { tapoEmail, semyraServiceUrls };
+    if (tapoPassword) {
+      payload.tapoPassword = tapoPassword;
+    }
+    await api('/api/smarthome/credentials', 'POST', payload);
+    document.getElementById('tapoPassword').value = '';
+    toast('CREDENCIALES TAPO Y URLS GUARDADAS');
+    setTimeout(loadState, 1800);
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function addSmartBulb() {
+  try {
+    const name = document.getElementById('bulbName').value.trim();
+    const ipAddress = document.getElementById('bulbIp').value.trim();
+    const webhookOnUrl = document.getElementById('bulbWebhookOn').value.trim();
+    const webhookOffUrl = document.getElementById('bulbWebhookOff').value.trim();
+    if (!name) return toast('INDICA UN NOMBRE PARA LA BOMBILLA');
+    await api('/api/smarthome/bulb', 'POST', {
+      action: 'add',
+      name,
+      ipAddress,
+      webhookOnUrl,
+      webhookOffUrl
+    });
+    document.getElementById('bulbName').value = '';
+    document.getElementById('bulbIp').value = '';
+    document.getElementById('bulbWebhookOn').value = '';
+    document.getElementById('bulbWebhookOff').value = '';
+    await loadState();
+    toast('BOMBILLA AÑADIDA');
+    setTimeout(loadState, 1800);
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function toggleSmartBulb(id) {
+  try {
+    const res = await api('/api/smarthome/bulb', 'POST', { action: 'toggle', id });
+    await loadState();
+    toast(res.statusText || 'BOMBILLA ACTUALIZADA');
+  } catch (error) {
+    await loadState();
+    toast(error.message);
+  }
+}
+
+async function deleteSmartBulb(id) {
+  try {
+    await api('/api/smarthome/bulb', 'POST', { action: 'delete', id });
+    await loadState();
+    toast('BOMBILLA ELIMINADA');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function connectHarbiz(useToken = false) {
+  const email = document.getElementById('harbizEmail').value.trim();
+  const passwordInput = document.getElementById('harbizPass');
+  const tokenInput = document.getElementById('harbizToken');
+  const token = tokenInput.value.trim();
+  const box = 'harbizStatusBox';
+  try {
+    if (useToken && !token) throw new Error('Pega un token de sesión Harbiz.');
+    if (!useToken && (!email || !passwordInput.value)) throw new Error('Indica el email y la contraseña.');
+    integrationStatus(box, 'CONECTANDO A Harbiz…');
+    const result = await api('/api/harbiz/connect', 'POST', useToken ? { token } : { email, password: passwordInput.value });
+    passwordInput.value = '';
+    tokenInput.value = '';
+    await loadState();
+    integrationStatus(box, result.message || 'Harbiz CONECTADO', true);
+  } catch (error) {
+    integrationStatus(box, error.message, true);
+  }
+}
+
+function stravaCredentials() {
+  const stravaClientId = document.getElementById('stravaClientId').value.trim();
+  const stravaClientSecret = document.getElementById('stravaClientSecret').value.trim();
+  return stravaClientSecret ? { stravaClientId, stravaClientSecret } : { stravaClientId };
+}
+
+async function authorizeStrava(redirect = true) {
+  const box = 'stravaStatusBox';
+  let stravaTab;
+  try {
+    const credentials = stravaCredentials();
+    const saved = currentState && currentState.config;
+    if (!credentials.stravaClientId) throw new Error('Indica el Strava Client ID.');
+    if (!credentials.stravaClientSecret &&
+        !(saved && saved.stravaClientSecret && saved.stravaClientId === credentials.stravaClientId)) {
+      throw new Error('Indica el Strava Client Secret.');
+    }
+    const localhost = document.getElementById('stravaCallbackHost').value === 'localhost';
+    if (redirect && localhost) {
+      stravaTab = window.open('about:blank', '_blank');
+      if (stravaTab) stravaTab.opener = null;
+    }
+    const result = await api('/api/config', 'POST', credentials);
+    currentState = { ...currentState, config: result.config };
+    document.getElementById('stravaClientSecret').value = '';
+    document.getElementById('stravaClientSecret').placeholder = 'Guardado en la tablet';
+    if (redirect) {
+      const url = '/api/strava/authorize' + (localhost ? '?callback=localhost' : '');
+      if (stravaTab) {
+        stravaTab.location.href = new URL(url, window.location.href).href;
+      } else {
+        window.location.href = url;
+      }
+    } else {
+      integrationStatus(box, 'CREDENCIALES GUARDADAS', true);
+    }
+  } catch (error) {
+    if (stravaTab) stravaTab.close();
+    integrationStatus(box, error.message, true);
+  }
+}
+
+async function saveStravaManual() {
+  const box = 'stravaStatusBox';
+  const input = document.getElementById('stravaManualValue');
+  const type = document.getElementById('stravaManualType').value;
+  const { stravaClientId, stravaClientSecret } = stravaCredentials();
+  try {
+    if (!input.value.trim()) throw new Error('Indica un token, código o URL de retorno de Strava.');
+    integrationStatus(box, 'CONECTANDO A STRAVA…');
+    const result = await api('/api/strava/token', 'POST', {
+      clientId: stravaClientId,
+      clientSecret: stravaClientSecret,
+      [type]: input.value.trim()
+    });
+    input.value = '';
+    document.getElementById('stravaClientSecret').value = '';
+    await loadState();
+    integrationStatus(box, result.message, true);
+  } catch (error) {
+    integrationStatus(box, error.message, true);
+  }
+}
+
+async function searchGeo() {
+  const q = document.getElementById('geoQuery').value.trim();
+  if (!q) return;
+  const r = await api('/api/geocode?q=' + encodeURIComponent(q));
+  const box = document.getElementById('geoResults');
+  box.innerHTML = '';
+  if (!r.results || !r.results.length) {
+    box.style.display = 'none';
+    return toast('SIN RESULTADOS');
+  }
+  box.style.display = 'block';
+  r.results.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'geo-item';
+    div.textContent = item.label;
+    div.onclick = () => {
+      const t = document.getElementById('geoTarget').value;
+      document.getElementById(t + 'Lat').value = item.lat.toFixed(6);
+      document.getElementById(t + 'Lon').value = item.lon.toFixed(6);
+      box.style.display = 'none';
+      toast('COORDENADAS CARGADAS (' + t.toUpperCase() + ')');
+    };
+    box.appendChild(div);
+  });
+}
+
+function intVal(id, fallback) {
+  const v = parseInt(document.getElementById(id).value, 10);
+  return Number.isFinite(v) ? v : fallback;
+}
+function floatVal(id, fallback) {
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : fallback;
+}
+
+async function saveGeneral() {
+  const c = (currentState && currentState.config) || {};
+  const icals = document.getElementById('icalUrls').value.split('\n').map(s => s.trim()).filter(Boolean);
+  await api('/api/config', 'POST', {
+    homeLat: floatVal('homeLat', c.homeLat ?? 40.4168),
+    homeLon: floatVal('homeLon', c.homeLon ?? -3.7038),
+    workLat: floatVal('workLat', c.workLat ?? 40.4400),
+    workLon: floatVal('workLon', c.workLon ?? -3.6900),
+    gymLat: floatVal('gymLat', c.gymLat ?? 40.4250),
+    gymLon: floatVal('gymLon', c.gymLon ?? -3.6800),
+    trafficProvider: document.getElementById('trafficProvider').value,
+    trafficIntervalMinutes: intVal('trafficIntervalMinutes', c.trafficIntervalMinutes ?? 10),
+    googleMapsApiKey: document.getElementById('googleMapsApiKey').value.trim(),
+    tomtomApiKey: document.getElementById('tomtomApiKey').value.trim(),
+    ...stravaCredentials(),
+    weeklyTrainingGoal: intVal('weeklyTrainingGoal', c.weeklyTrainingGoal ?? 6),
+    telegramBotToken: document.getElementById('telegramBotToken').value.trim(),
+    telegramAllowedChatId: document.getElementById('telegramAllowedChatId').value.trim(),
+    icalUrls: icals,
+    dayStartHour: intVal('dayStartHour', c.dayStartHour ?? 9),
+    dayEndHour: intVal('dayEndHour', c.dayEndHour ?? 18),
+    wakeTimeoutSeconds: intVal('wakeTimeoutSeconds', c.wakeTimeoutSeconds ?? 60),
+    nightWakeTimeoutSeconds: intVal('nightWakeTimeoutSeconds', c.nightWakeTimeoutSeconds ?? 45),
+    lowPowerBrightness: floatVal('lowPowerBrightness', c.lowPowerBrightness ?? 0.06),
+    activeBrightness: floatVal('activeBrightness', c.activeBrightness ?? 0.88)
+  });
+  document.getElementById('stravaClientSecret').value = '';
+  toast('CONFIGURACIÓN GUARDADA');
+  setTimeout(loadState, 1500);
+}
+
+async function initializePortal() {
+  const query = new URLSearchParams(window.location.search);
+  const status = query.get('strava');
+  try {
+    await loadState();
+  } catch (error) {
+    toast(error.message);
+  }
+  if (status === 'connected' || status === 'error') {
+    const message = status === 'connected' ? 'STRAVA CONECTADO'
+      : query.get('reason') || 'Error de autorización de Strava.';
+    integrationStatus('stravaStatusBox', message, true);
+    query.delete('strava');
+    query.delete('reason');
+    const rest = query.toString();
+    history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
+  }
+}
+
+initializePortal();
+</script>
+</body>
+</html>

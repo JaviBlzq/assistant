@@ -1,0 +1,36 @@
+# Orchestration & Planning Docs (local only)
+orchestration/
+.orchestration/
+
+# Gradle & Android Build Outputs
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Credentials, signing and local agent tooling
+*.jks
+*.keystore
+.env
+.env.*
+!.env.example
+.agents/
+.claude/
+kanvas-files/
+kanvas.json
+# Local workflow instructions and machine-specific infrastructure
+AGENTS.md
+docs/INFRASTRUCTURE.md
+# Legacy proprietary fonts (unused; retained only in local checkout)
+app/src/main/assets/fonts/Tecnica*
+app/src/main/assets/web/fonts/Tecnica*

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ASSISTANT // 01</string>
+    <string name="device_admin_desc">Kiosk and notification-free mode controller for Assistant Display</string>
+    <string name="notification_blocker_label">Assistant Zero-Notification Guard</string>
+</resources>
